@@ -542,7 +542,7 @@ Availability = (Total Time - Downtime) / Total Time × 100%
 ```
 Client Process          Server Process
     |                        |
-call foo(args)              |
+call foo(args)               |
     |                        |
     v                        |
 Client Stub                  |
@@ -732,10 +732,10 @@ Producer -> Message Broker -> Consumer
     |           |               |
     v           v               v
   App A    Queue/Topic        App B
-             |
-             v
-        Persistent
-          Storage
+                |
+                v
+            Persistent
+              Storage
 ```
 
 ### Message Queues
