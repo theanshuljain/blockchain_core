@@ -1,0 +1,3 @@
+[submodule "languages/solidity/learn-solidity-alchemy"]
+	path = languages/solidity/learn-solidity-alchemy
+	url = git@github.com:theanshuljain/learn-solidity-alchemy.git
