@@ -2,6 +2,9 @@
 
 A comprehensive guide to system design principles, patterns, and practices for building scalable, reliable, and maintainable distributed systems.
 
+Reference:
+https://www.youtube.com/playlist?list=PLA3GkZPtsafZdyC5iucNM_uhqGJ5yFNUM
+
 ## 1. Core Fundamentals
 
 System design is the process of defining the architecture, components, modules, interfaces, and data for a system to satisfy specified requirements while optimizing for scalability, performance, and maintainability.

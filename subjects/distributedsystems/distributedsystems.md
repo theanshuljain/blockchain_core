@@ -1,4 +1,9 @@
 # Distributed Systems
+
+References:
+1. https://www.youtube.com/playlist?list=PLOE1GTZ5ouRPbpTnrZ3Wqjamfwn_Q5Y9A
+2. https://www.youtube.com/playlist?list=PLeKd45zvjcDFUEv_ohr_HdUFe97RItdiB
+
 ## Introduction
 Distributed systems are **collections of independent computers** that appear to users as a **single coherent system**. They enable **scalability**, **fault tolerance**, and **resource sharing** across multiple machines connected by networks.
 

@@ -1,5 +1,9 @@
 # General Knowledge on Blockchain Technology
 
+Also learn:
+Game Theory: https://www.youtube.com/playlist?list=PL35FE5C4B157509C9
+DSA: https://takeuforward.org/strivers-a2z-dsa-course/strivers-a2z-dsa-course-sheet-2
+
 ## Table of Contents
 1. [What is Blockchain?](#what-is-blockchain)
 2. [Cryptographic Foundations](#cryptographic-foundations)
