@@ -1,4 +1,8 @@
 # Cryptography
+
+Reference:
+https://www.youtube.com/playlist?list=PLE4V3KXzxPRQYUil17HB6XcIu-JMebD7n
+
 ## Introduction
 Cryptography is the science of **securing information** through mathematical algorithms and computational techniques to ensure **confidentiality**, **integrity**, and **authenticity** in digital communications.
 
