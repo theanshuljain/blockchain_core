@@ -276,6 +276,224 @@ contract TokenFactory {
 }
 ```
 
+#### 4. Proxy Patterns
+
+##### Transparent Proxy Pattern
+```solidity
+// Proxy contract
+contract TransparentProxy {
+    address private implementation;
+    address private admin;
+    
+    modifier onlyAdmin() {
+        require(msg.sender == admin, "Not admin");
+        _;
+    }
+    
+    function upgrade(address newImplementation) external onlyAdmin {
+        implementation = newImplementation;
+    }
+    
+    fallback() external payable {
+        address impl = implementation;
+        assembly {
+            calldatacopy(0, 0, calldatasize())
+            let result := delegatecall(gas(), impl, 0, calldatasize(), 0, 0)
+            returndatacopy(0, 0, returndatasize())
+            
+            switch result
+            case 0 { revert(0, returndatasize()) }
+            default { return(0, returndatasize()) }
+        }
+    }
+}
+
+// Implementation contract
+contract TokenV1 {
+    string public name;
+    uint256 public totalSupply;
+    
+    function initialize(string memory _name) public {
+        name = _name;
+        totalSupply = 1000000;
+    }
+}
+
+contract TokenV2 {
+    string public name;
+    uint256 public totalSupply;
+    uint256 public version; // New variable
+    
+    function initialize(string memory _name) public {
+        name = _name;
+        totalSupply = 1000000;
+        version = 2;
+    }
+    
+    function mint(uint256 amount) public {
+        totalSupply += amount;
+    }
+}
+```
+
+##### UUPS (Universal Upgradeable Proxy Standard)
+```solidity
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+
+contract UUPSToken is UUPSUpgradeable {
+    string public name;
+    uint256 public totalSupply;
+    
+    function initialize(string memory _name) public initializer {
+        name = _name;
+        totalSupply = 1000000;
+    }
+    
+    function _authorizeUpgrade(address newImplementation) internal override {
+        // Add authorization logic
+    }
+}
+```
+
+##### Beacon Proxy Pattern
+```solidity
+contract Beacon {
+    address private implementation;
+    address public admin;
+    
+    function upgrade(address newImplementation) external {
+        require(msg.sender == admin, "Not admin");
+        implementation = newImplementation;
+    }
+    
+    function getImplementation() external view returns (address) {
+        return implementation;
+    }
+}
+
+contract BeaconProxy {
+    address private beacon;
+    
+    constructor(address _beacon) {
+        beacon = _beacon;
+    }
+    
+    fallback() external payable {
+        address impl = IBeacon(beacon).getImplementation();
+        assembly {
+            calldatacopy(0, 0, calldatasize())
+            let result := delegatecall(gas(), impl, 0, calldatasize(), 0, 0)
+            returndatacopy(0, 0, returndatasize())
+            
+            switch result
+            case 0 { revert(0, returndatasize()) }
+            default { return(0, returndatasize()) }
+        }
+    }
+}
+```
+
+#### 5. Diamond Pattern (EIP-2535)
+
+```solidity
+// Diamond storage pattern
+library LibDiamond {
+    bytes32 constant DIAMOND_STORAGE_POSITION = keccak256("diamond.standard.diamond.storage");
+
+    struct FacetAddressAndPosition {
+        address facetAddress;
+        uint96 functionSelectorPosition;
+    }
+
+    struct FacetFunctionSelectors {
+        bytes4[] functionSelectors;
+        uint256 facetAddressPosition;
+    }
+
+    struct DiamondStorage {
+        mapping(bytes4 => FacetAddressAndPosition) selectorToFacetAndPosition;
+        mapping(address => FacetFunctionSelectors) facetFunctionSelectors;
+        address[] facetAddresses;
+        mapping(bytes4 => bool) supportedInterfaces;
+        address contractOwner;
+    }
+
+    function diamondStorage() internal pure returns (DiamondStorage storage ds) {
+        bytes32 position = DIAMOND_STORAGE_POSITION;
+        assembly {
+            ds.slot := position
+        }
+    }
+}
+
+// Diamond main contract
+contract Diamond {
+    constructor(address _contractOwner, address _diamondCutFacet) payable {
+        LibDiamond.setContractOwner(_contractOwner);
+        LibDiamond.addDiamondFunctions(_diamondCutFacet, _diamondCutFacet);
+    }
+
+    fallback() external payable {
+        LibDiamond.DiamondStorage storage ds;
+        bytes32 position = LibDiamond.DIAMOND_STORAGE_POSITION;
+        assembly {
+            ds.slot := position
+        }
+        
+        address facet = ds.selectorToFacetAndPosition[msg.sig].facetAddress;
+        require(facet != address(0), "Function does not exist");
+        
+        assembly {
+            calldatacopy(0, 0, calldatasize())
+            let result := delegatecall(gas(), facet, 0, calldatasize(), 0, 0)
+            returndatacopy(0, 0, returndatasize())
+            
+            switch result
+            case 0 { revert(0, returndatasize()) }
+            default { return(0, returndatasize()) }
+        }
+    }
+}
+
+// Example facet
+contract TokenFacet {
+    event Transfer(address indexed from, address indexed to, uint256 value);
+    
+    function transfer(address to, uint256 amount) external returns (bool) {
+        // Implementation logic
+        emit Transfer(msg.sender, to, amount);
+        return true;
+    }
+    
+    function balanceOf(address account) external view returns (uint256) {
+        // Implementation logic
+        return 0;
+    }
+}
+```
+
+#### 6. Minimal Proxy Pattern (EIP-1167)
+```solidity
+contract MinimalProxyFactory {
+    address public immutable implementation;
+    
+    constructor(address _implementation) {
+        implementation = _implementation;
+    }
+    
+    function createClone() external returns (address clone) {
+        bytes20 targetBytes = bytes20(implementation);
+        assembly {
+            let clone := mload(0x40)
+            mstore(clone, 0x3d602d80600a3d3981f3363d3d373d3d3d363d73000000000000000000000000)
+            mstore(add(clone, 0x14), targetBytes)
+            mstore(add(clone, 0x28), 0x5af43d82803e903d91602b57fd5bf30000000000000000000000000000000000)
+            clone := create2(0, clone, 0x37, salt)
+        }
+    }
+}
+```
+
 ## Security Considerations
 
 ### Common Vulnerabilities
@@ -525,6 +743,360 @@ contract PriceFeed {
 - **Liquidity**: Network effects needed
 - **Adoption**: User experience barriers
 - **Interoperability**: Cross-chain communication
+
+## Non-Ethereum Smart Contract Platforms
+
+### Solana Smart Contracts (Programs)
+
+#### Architecture
+Solana uses an **account-based model** where programs are stateless and data is stored in accounts.
+
+```rust
+use anchor_lang::prelude::*;
+
+declare_id!("YourProgramID");
+
+#[program]
+pub mod hello_world {
+    use super::*;
+    
+    pub fn initialize(ctx: Context<Initialize>, data: u64) -> Result<()> {
+        let my_account = &mut ctx.accounts.my_account;
+        my_account.data = data;
+        Ok(())
+    }
+    
+    pub fn update(ctx: Context<Update>, data: u64) -> Result<()> {
+        let my_account = &mut ctx.accounts.my_account;
+        my_account.data = data;
+        Ok(())
+    }
+}
+
+#[derive(Accounts)]
+pub struct Initialize<'info> {
+    #[account(init, payer = user, space = 8 + 8)]
+    pub my_account: Account<'info, MyAccount>,
+    #[account(mut)]
+    pub user: Signer<'info>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct Update<'info> {
+    #[account(mut)]
+    pub my_account: Account<'info, MyAccount>,
+}
+
+#[account]
+pub struct MyAccount {
+    pub data: u64,
+}
+```
+
+#### Key Features
+- **High Performance**: 65,000+ TPS
+- **Low Costs**: Fraction of penny per transaction
+- **Parallel Processing**: Multiple transactions simultaneously
+- **Rust-based**: Memory safety and performance
+
+### Cardano Smart Contracts (Plutus)
+
+#### Plutus Core
+```haskell
+-- Plutus validator script
+validator :: PubKeyHash -> () -> ScriptContext -> Bool
+validator pkh () ctx = traceIfFalse "wrong signer" $ ctx `txSignedBy` pkh
+
+-- Compile to Plutus Core
+compiledValidator :: CompiledCode (PubKeyHash -> () -> ScriptContext -> Bool)
+compiledValidator = $$(PlutusTx.compile [|| validator ||])
+```
+
+#### UTXO Model Features
+- **Extended UTXO (eUTXO)**: Stateful contracts on UTXO model
+- **Deterministic**: Predictable transaction fees
+- **Formal Verification**: Mathematical proofs of correctness
+- **Functional Programming**: Haskell-based development
+
+### Polkadot Smart Contracts (ink!)
+
+#### ink! Framework
+```rust
+#![cfg_attr(not(feature = "std"), no_std)]
+
+use ink_lang as ink;
+
+#[ink::contract]
+mod flipper {
+    #[ink(storage)]
+    pub struct Flipper {
+        value: bool,
+    }
+
+    impl Flipper {
+        #[ink(constructor)]
+        pub fn new(init_value: bool) -> Self {
+            Self { value: init_value }
+        }
+
+        #[ink(message)]
+        pub fn flip(&mut self) {
+            self.value = !self.value;
+        }
+
+        #[ink(message)]
+        pub fn get(&self) -> bool {
+            self.value
+        }
+    }
+}
+```
+
+#### Substrate Framework Features
+- **Interoperability**: Cross-chain communication
+- **Shared Security**: Polkadot relay chain security
+- **Upgradeable Runtime**: Forkless upgrades
+- **WebAssembly**: High-performance execution
+
+### NEAR Protocol Smart Contracts
+
+#### AssemblyScript/Rust Implementation
+```typescript
+// AssemblyScript smart contract
+import { context, storage, logging } from "near-sdk-as";
+
+export function set_greeting(message: string): void {
+  logging.log("Saving greeting " + message);
+  storage.set("greeting", message);
+}
+
+export function get_greeting(account_id: string): string | null {
+  return storage.get<string>("greeting", "Hello");
+}
+
+export function say_hello(): string {
+  const greeting = storage.get<string>("greeting", "Hello");
+  const who = context.sender;
+  return greeting + " " + who + "!";
+}
+```
+
+```rust
+// Rust smart contract
+use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
+use near_sdk::{env, near_bindgen, AccountId};
+
+#[near_bindgen]
+#[derive(Default, BorshDeserialize, BorshSerialize)]
+pub struct HelloContract {
+    greeting: String,
+}
+
+#[near_bindgen]
+impl HelloContract {
+    pub fn get_greeting(&self) -> String {
+        return self.greeting.clone();
+    }
+
+    pub fn set_greeting(&mut self, message: String) {
+        let account_id = env::signer_account_id();
+        env::log_str(&format!("Saving greeting '{}' for account '{}'", message, account_id));
+        self.greeting = message;
+    }
+}
+```
+
+#### NEAR Features
+- **Human-Readable Accounts**: alice.near instead of hex addresses
+- **Progressive Security**: Upgrade from multisig to full smart contract
+- **Sharding**: Nightshade sharding for scalability
+- **Developer-Friendly**: Built-in developer tools
+
+### Cosmos Smart Contracts (CosmWasm)
+
+#### CosmWasm Contract
+```rust
+use cosmwasm_std::{
+    entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
+};
+
+use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+use crate::state::{State, STATE};
+
+#[entry_point]
+pub fn instantiate(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+    msg: InstantiateMsg,
+) -> StdResult<Response> {
+    let state = State {
+        count: msg.count,
+        owner: info.sender.clone(),
+    };
+    STATE.save(deps.storage, &state)?;
+
+    Ok(Response::new()
+        .add_attribute("method", "instantiate")
+        .add_attribute("owner", info.sender)
+        .add_attribute("count", msg.count.to_string()))
+}
+
+#[entry_point]
+pub fn execute(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+    msg: ExecuteMsg,
+) -> StdResult<Response> {
+    match msg {
+        ExecuteMsg::Increment {} => try_increment(deps),
+        ExecuteMsg::Reset { count } => try_reset(deps, info, count),
+    }
+}
+```
+
+#### Cosmos SDK Features
+- **Inter-Blockchain Communication (IBC)**: Native cross-chain
+- **Tendermint Consensus**: Instant finality
+- **Application-Specific Blockchains**: Custom blockchain per application
+- **Sovereignty**: Independent governance and economics
+
+### Tezos Smart Contracts (Michelson)
+
+#### Michelson Stack-Based Language
+```ocaml
+(* OCaml/CameLIGO contract *)
+type storage = int
+
+type parameter =
+  Increment of int
+| Decrement of int
+
+type return = operation list * storage
+
+let main (parameter, storage : parameter * storage) : return =
+  let new_storage = match parameter with
+    Increment n -> storage + n
+  | Decrement n -> storage - n
+  in
+  ([], new_storage)
+```
+
+#### Tezos Features
+- **Formal Verification**: Mathematical proofs built-in
+- **On-Chain Governance**: Protocol upgrades via voting
+- **Liquid Proof of Stake**: Energy-efficient consensus
+- **Self-Amendment**: Blockchain can upgrade itself
+
+### Algorand Smart Contracts (TEAL/PyTeal)
+
+#### TEAL (Transaction Execution Approval Language)
+```python
+# PyTeal smart contract
+from pyteal import *
+
+def approval_program():
+    return Seq([
+        If(Txn.application_id() == Int(0))
+        .Then(Approve())
+        .Else(
+            Cond(
+                [Txn.application_args[0] == Bytes("increment"), increment()],
+                [Txn.application_args[0] == Bytes("decrement"), decrement()],
+            )
+        )
+    ])
+
+def increment():
+    return Seq([
+        App.globalPut(Bytes("counter"), App.globalGet(Bytes("counter")) + Int(1)),
+        Approve()
+    ])
+
+def decrement():
+    return Seq([
+        App.globalPut(Bytes("counter"), App.globalGet(Bytes("counter")) - Int(1)),
+        Approve()
+    ])
+```
+
+#### Algorand Features
+- **Pure Proof of Stake**: Energy efficient
+- **Instant Finality**: No forks
+- **Atomic Transfers**: Multi-asset, multi-party transactions
+- **Layer 1 Features**: ASAs (Algorand Standard Assets)
+
+### Internet Computer (DFINITY) Canisters
+
+#### Motoko Smart Contracts
+```motoko
+import Debug "mo:base/Debug";
+
+actor HelloWorld {
+  stable var greeting : Text = "Hello";
+
+  public func set_greeting(new_greeting : Text) : async () {
+    greeting := new_greeting;
+    Debug.print("Greeting set to: " # greeting);
+  };
+
+  public query func get_greeting() : async Text {
+    greeting;
+  };
+
+  public func greet(name : Text) : async Text {
+    greeting # ", " # name # "!";
+  };
+}
+```
+
+#### Internet Computer Features
+- **Web Speed**: Near-native performance
+- **Reverse Gas Model**: Contracts pay for their own execution
+- **Internet Integration**: Direct HTTP requests
+- **Unlimited Scalability**: Subnet-based architecture
+
+### Flow Smart Contracts (Cadence)
+
+#### Resource-Oriented Programming
+```cadence
+// Cadence smart contract
+pub contract HelloWorld {
+    pub var greeting: String
+
+    init() {
+        self.greeting = "Hello, World!"
+    }
+
+    pub fun changeGreeting(newGreeting: String): String {
+        self.greeting = newGreeting
+        return self.greeting
+    }
+}
+
+// Resource example
+pub resource NFT {
+    pub let id: UInt64
+
+    init(id: UInt64) {
+        self.id = id
+    }
+}
+
+pub contract NFTContract {
+    pub fun createNFT(): @NFT {
+        return <-create NFT(id: 1)
+    }
+}
+```
+
+#### Flow Features
+- **Resource-Oriented**: Prevents double-spending at language level
+- **Multi-Role Architecture**: Separation of concerns
+- **Developer-Friendly**: Built for mainstream adoption
+- **High Throughput**: Optimized for applications
 
 ## Future Evolution
 

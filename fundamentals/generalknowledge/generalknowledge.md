@@ -20,6 +20,16 @@ DSA: https://takeuforward.org/strivers-a2z-dsa-course/strivers-a2z-dsa-course-sh
 13. [Security Models and Attack Vectors](#security-models-and-attack-vectors)
 14. [Governance and Protocol Evolution](#governance-and-protocol-evolution)
 15. [Energy and Environmental Considerations](#energy-and-environmental-considerations)
+16. [MEV (Maximal Extractable Value)](#mev-maximal-extractable-value)
+17. [Tokenomics and Economic Design](#tokenomics-and-economic-design)
+18. [Zero-Knowledge Technologies](#zero-knowledge-technologies)
+19. [Layer 2 Deep Dive](#layer-2-deep-dive)
+20. [Cross-Chain Infrastructure](#cross-chain-infrastructure)
+21. [Decentralized Finance (DeFi) Protocols](#decentralized-finance-defi-protocols)
+22. [NFTs and Digital Assets](#nfts-and-digital-assets)
+23. [Blockchain Oracles](#blockchain-oracles)
+24. [Privacy-Preserving Technologies](#privacy-preserving-technologies)
+25. [Quantum-Resistant Blockchain](#quantum-resistant-blockchain)
 
 ## What is Blockchain?
 
@@ -654,6 +664,811 @@ Chain B: Burn 10 Wrapped Tokens → Chain A: Unlock 10 Tokens
 - **Carbon Taxes**: Pricing environmental externalities
 - **Renewable Mandates**: Requirements for green energy use
 - **Mining Bans**: Restrictions in some jurisdictions
+
+## MEV (Maximal Extractable Value)
+
+### Definition and Importance
+MEV represents the **maximum value that validators/miners can extract** from block production beyond standard fees through **transaction reordering, inclusion, and exclusion**.
+
+### MEV Sources
+
+#### 1. Arbitrage
+```solidity
+// DEX arbitrage example
+contract ArbitrageBot {
+    function executeArbitrage(
+        address tokenA,
+        address tokenB,
+        address dex1,
+        address dex2,
+        uint256 amount
+    ) external {
+        // Buy on DEX1, sell on DEX2 for profit
+        uint256 profit = calculateArbitrage(tokenA, tokenB, dex1, dex2, amount);
+        require(profit > 0, "No arbitrage opportunity");
+        
+        // Execute trades atomically
+        executeTrades(tokenA, tokenB, dex1, dex2, amount);
+    }
+}
+```
+
+#### 2. Liquidations
+- **DeFi Protocol Liquidations**: Extract value from undercollateralized positions
+- **Front-running**: Submit liquidation before original transaction
+- **Sandwich Attacks**: Place trades before and after target transaction
+
+#### 3. Sandwich Attacks
+```
+1. Victim submits large swap: A → B
+2. MEV bot front-runs: A → B (increases price)
+3. Victim's trade executes at worse price
+4. MEV bot back-runs: B → A (profits from price increase)
+```
+
+### MEV Protection Mechanisms
+
+#### 1. Flashbots and MEV-Boost
+- **Private Mempools**: Transactions not visible publicly
+- **MEV Auction**: Builders compete for block construction rights
+- **MEV Redistribution**: Share MEV with validators and users
+
+#### 2. Time-Based Ordering
+- **Commit-Reveal Schemes**: Hide transaction details initially
+- **Verifiable Random Functions**: Unpredictable ordering
+- **Threshold Decryption**: Decrypt transactions simultaneously
+
+#### 3. Application-Level Solutions
+- **Batch Auctions**: Group trades together
+- **Private Pools**: Restrict transaction visibility
+- **MEV Tax**: Charge for MEV extraction
+
+## Tokenomics and Economic Design
+
+### Token Models
+
+#### 1. Utility Tokens
+- **Gas Tokens**: Pay for computation (ETH, BNB)
+- **Governance Tokens**: Vote on protocol decisions (UNI, COMP)
+- **Access Tokens**: Gate access to services (BAT, FIL)
+
+#### 2. Security Tokens
+- **Staking Tokens**: Secure network through staking (ETH2, ADA)
+- **Work Tokens**: Provide services to earn rewards (LINK, GRT)
+
+#### 3. Store of Value Tokens
+- **Digital Gold**: Store wealth digitally (BTC)
+- **Algorithmic Stablecoins**: Maintain stable value (DAI, FRAX)
+
+### Economic Mechanisms
+
+#### 1. Bonding Curves
+```solidity
+contract BondingCurve {
+    uint256 public totalSupply;
+    uint256 public poolBalance;
+    uint256 public reserveRatio = 500000; // 50% in PPM
+    
+    function calculatePurchaseReturn(uint256 depositAmount) public view returns (uint256) {
+        // Bancor formula: tokens = supply * ((1 + deposit/balance)^ratio - 1)
+        return bancorFormula(totalSupply, poolBalance, reserveRatio, depositAmount);
+    }
+}
+```
+
+#### 2. Liquidity Mining
+- **Yield Farming**: Provide liquidity for token rewards
+- **Impermanent Loss**: Risk of holding liquidity positions
+- **Dual Token Models**: Separate governance and utility tokens
+
+#### 3. Token Burning and Deflationary Mechanics
+```solidity
+contract Deflationary {
+    uint256 public burnRate = 100; // 1% burn rate
+    
+    function transfer(address to, uint256 amount) public returns (bool) {
+        uint256 burnAmount = amount * burnRate / 10000;
+        uint256 transferAmount = amount - burnAmount;
+        
+        _burn(msg.sender, burnAmount);
+        _transfer(msg.sender, to, transferAmount);
+        return true;
+    }
+}
+```
+
+### Mechanism Design Principles
+
+#### 1. Alignment of Incentives
+- **Token holders benefit from protocol success**
+- **Validators/miners secure network for rewards**
+- **Users pay for value received**
+
+#### 2. Sybil Resistance
+- **Proof of Stake**: Economic cost to attack
+- **Proof of Work**: Computational cost
+- **Proof of Burn**: Opportunity cost
+
+#### 3. Long-term Sustainability
+- **Revenue Models**: Protocol generates value
+- **Treasury Management**: Protocol-owned liquidity
+- **Ecosystem Development**: Developer incentives
+
+## Zero-Knowledge Technologies
+
+### ZK-SNARK (Zero-Knowledge Succinct Non-Interactive Argument of Knowledge)
+
+#### Technical Components
+```
+Trusted Setup → Proving Key + Verification Key
+Witness (Private Input) + Public Input → Proof
+Proof + Public Input + Verification Key → Valid/Invalid
+```
+
+#### Applications
+- **Zcash**: Private transactions
+- **Tornado Cash**: Transaction mixing
+- **zkSync**: Layer 2 scaling
+
+### ZK-STARK (Zero-Knowledge Scalable Transparent Argument of Knowledge)
+
+#### Advantages over SNARKs
+- **No Trusted Setup**: Transparent parameter generation
+- **Post-Quantum Security**: Resistant to quantum attacks
+- **Scalability**: Better performance for large computations
+
+#### Trade-offs
+- **Larger Proof Size**: 10-100x larger than SNARKs
+- **Higher Verification Cost**: More expensive to verify
+- **Less Mature**: Newer technology with fewer implementations
+
+### Practical ZK Applications
+
+#### 1. Identity Verification
+```solidity
+contract ZKIdentity {
+    mapping(address => bool) public verifiedUsers;
+    
+    function verifyAge(uint256[8] calldata proof, uint256 minAge) external {
+        // Verify user is over minAge without revealing actual age
+        require(verifyZKProof(proof, minAge), "Invalid proof");
+        verifiedUsers[msg.sender] = true;
+    }
+}
+```
+
+#### 2. Private Voting
+- **Prove eligibility without revealing identity**
+- **Ensure one vote per person**
+- **Maintain vote privacy**
+
+#### 3. Financial Privacy
+- **Private balance proofs**
+- **Selective disclosure of transaction details**
+- **Compliance with privacy regulations**
+
+## Layer 2 Deep Dive
+
+### Rollup Technologies
+
+#### Optimistic Rollups
+```solidity
+contract OptimisticRollup {
+    struct StateRoot {
+        bytes32 root;
+        uint256 timestamp;
+        address proposer;
+    }
+    
+    mapping(uint256 => StateRoot) public stateRoots;
+    uint256 public challengePeriod = 7 days;
+    
+    function proposeStateRoot(bytes32 newRoot) external {
+        stateRoots[block.number] = StateRoot({
+            root: newRoot,
+            timestamp: block.timestamp,
+            proposer: msg.sender
+        });
+    }
+    
+    function challengeStateRoot(uint256 blockNumber, bytes calldata fraudProof) external {
+        require(block.timestamp < stateRoots[blockNumber].timestamp + challengePeriod, "Challenge period expired");
+        // Verify fraud proof and slash proposer if invalid
+        verifyFraudProof(blockNumber, fraudProof);
+    }
+}
+```
+
+#### ZK-Rollups
+```solidity
+contract ZKRollup {
+    bytes32 public stateRoot;
+    
+    function processBlock(
+        bytes32 newStateRoot,
+        uint256[8] calldata proof,
+        bytes calldata publicInputs
+    ) external {
+        require(verifyZKProof(proof, publicInputs), "Invalid proof");
+        stateRoot = newStateRoot;
+    }
+}
+```
+
+### State Channels
+
+#### Payment Channels
+```solidity
+contract PaymentChannel {
+    address public alice;
+    address public bob;
+    uint256 public expiration;
+    mapping(address => uint256) public balances;
+    
+    function closeChannel(
+        uint256 aliceBalance,
+        uint256 bobBalance,
+        bytes calldata aliceSignature,
+        bytes calldata bobSignature
+    ) external {
+        require(block.timestamp > expiration, "Channel not expired");
+        require(verifySignatures(aliceBalance, bobBalance, aliceSignature, bobSignature), "Invalid signatures");
+        
+        balances[alice] = aliceBalance;
+        balances[bob] = bobBalance;
+    }
+}
+```
+
+#### Generalized State Channels
+- **Multi-party channels**: More than two participants
+- **Application-specific logic**: Gaming, betting, auctions
+- **Counterfactual instantiation**: Deploy contracts only when needed
+
+### Plasma Chains
+
+#### Plasma Cash
+- **Non-fungible tokens**: Each coin has unique history
+- **Sparse Merkle trees**: Efficient inclusion proofs
+- **Exit games**: Challenge-response for withdrawals
+
+#### Plasma MVP
+- **UTXO model**: Similar to Bitcoin transactions
+- **Mass exit**: Users can exit if operator misbehaves
+- **Data availability**: Ensure transaction data is available
+
+## Cross-Chain Infrastructure
+
+### Bridge Technologies
+
+#### Lock-and-Mint Bridges
+```solidity
+contract TokenBridge {
+    mapping(bytes32 => bool) public processedTransactions;
+    
+    function lockTokens(address token, uint256 amount, string calldata targetChain) external {
+        IERC20(token).transferFrom(msg.sender, address(this), amount);
+        emit TokensLocked(msg.sender, token, amount, targetChain);
+    }
+    
+    function mintTokens(
+        address recipient,
+        address token,
+        uint256 amount,
+        bytes32 transactionId,
+        bytes[] calldata signatures
+    ) external {
+        require(!processedTransactions[transactionId], "Already processed");
+        require(verifySignatures(recipient, token, amount, transactionId, signatures), "Invalid signatures");
+        
+        processedTransactions[transactionId] = true;
+        IWrappedToken(token).mint(recipient, amount);
+    }
+}
+```
+
+#### Atomic Swaps
+```solidity
+contract AtomicSwap {
+    struct Swap {
+        bytes32 hashlock;
+        uint256 timelock;
+        address sender;
+        address receiver;
+        uint256 amount;
+        bool completed;
+        bool refunded;
+    }
+    
+    mapping(bytes32 => Swap) public swaps;
+    
+    function initiate(
+        bytes32 hashlock,
+        uint256 timelock,
+        address receiver,
+        uint256 amount
+    ) external payable {
+        require(msg.value == amount, "Incorrect amount");
+        require(timelock > block.timestamp, "Invalid timelock");
+        
+        bytes32 swapId = keccak256(abi.encodePacked(hashlock, timelock, msg.sender, receiver));
+        swaps[swapId] = Swap({
+            hashlock: hashlock,
+            timelock: timelock,
+            sender: msg.sender,
+            receiver: receiver,
+            amount: amount,
+            completed: false,
+            refunded: false
+        });
+    }
+    
+    function complete(bytes32 swapId, string calldata preimage) external {
+        Swap storage swap = swaps[swapId];
+        require(keccak256(abi.encodePacked(preimage)) == swap.hashlock, "Invalid preimage");
+        require(block.timestamp < swap.timelock, "Timelock expired");
+        require(!swap.completed && !swap.refunded, "Swap already settled");
+        
+        swap.completed = true;
+        payable(swap.receiver).transfer(swap.amount);
+    }
+}
+```
+
+### Interoperability Protocols
+
+#### Inter-Blockchain Communication (IBC)
+- **Packet-based communication**: Standardized message format
+- **Light client verification**: Verify remote chain state
+- **Relayer network**: Off-chain infrastructure for message passing
+
+#### Polkadot Architecture
+- **Relay Chain**: Central coordination hub
+- **Parachains**: Application-specific blockchains
+- **Cross-Chain Message Passing (XCMP)**: Parachain communication
+- **Bridges**: Connect to external blockchains
+
+## Decentralized Finance (DeFi) Protocols
+
+### Automated Market Makers (AMMs)
+
+#### Constant Product Formula
+```solidity
+contract AMM {
+    uint256 public reserveA;
+    uint256 public reserveB;
+    uint256 public constant k = reserveA * reserveB;
+    
+    function swap(address tokenIn, uint256 amountIn) external returns (uint256 amountOut) {
+        require(tokenIn == tokenA || tokenIn == tokenB, "Invalid token");
+        
+        if (tokenIn == tokenA) {
+            amountOut = (reserveB * amountIn) / (reserveA + amountIn);
+            reserveA += amountIn;
+            reserveB -= amountOut;
+        } else {
+            amountOut = (reserveA * amountIn) / (reserveB + amountIn);
+            reserveB += amountIn;
+            reserveA -= amountOut;
+        }
+        
+        require(reserveA * reserveB >= k, "Invariant violated");
+    }
+}
+```
+
+#### Advanced AMM Models
+- **Curve Finance**: Stablecoin-optimized AMM
+- **Balancer**: Multi-token pools with custom weights
+- **Uniswap V3**: Concentrated liquidity positions
+
+### Lending and Borrowing
+
+#### Compound-style Protocols
+```solidity
+contract LendingPool {
+    mapping(address => uint256) public deposits;
+    mapping(address => uint256) public borrows;
+    uint256 public interestRate = 500; // 5% APR
+    
+    function deposit(uint256 amount) external {
+        IERC20(token).transferFrom(msg.sender, address(this), amount);
+        deposits[msg.sender] += amount;
+    }
+    
+    function borrow(uint256 amount) external {
+        uint256 collateralValue = getCollateralValue(msg.sender);
+        require(collateralValue * 75 / 100 >= amount, "Insufficient collateral");
+        
+        borrows[msg.sender] += amount;
+        IERC20(token).transfer(msg.sender, amount);
+    }
+}
+```
+
+#### Flash Loans
+```solidity
+contract FlashLoan {
+    function flashLoan(address token, uint256 amount, bytes calldata data) external {
+        uint256 balanceBefore = IERC20(token).balanceOf(address(this));
+        require(balanceBefore >= amount, "Insufficient liquidity");
+        
+        IERC20(token).transfer(msg.sender, amount);
+        IFlashLoanReceiver(msg.sender).executeOperation(token, amount, data);
+        
+        uint256 balanceAfter = IERC20(token).balanceOf(address(this));
+        require(balanceAfter >= balanceBefore, "Flash loan not repaid");
+    }
+}
+```
+
+### Derivatives and Synthetics
+
+#### Perpetual Swaps
+- **Funding rates**: Mechanism to anchor price to underlying
+- **Leverage**: Amplified exposure with margin requirements
+- **Liquidation**: Automatic position closure to prevent losses
+
+#### Synthetic Assets
+```solidity
+contract SyntheticAsset {
+    mapping(address => uint256) public collateral;
+    mapping(address => uint256) public syntheticBalance;
+    
+    function mint(uint256 collateralAmount) external {
+        uint256 price = getOraclePrice();
+        uint256 syntheticAmount = collateralAmount * price / collateralizationRatio;
+        
+        IERC20(collateralToken).transferFrom(msg.sender, address(this), collateralAmount);
+        collateral[msg.sender] += collateralAmount;
+        syntheticBalance[msg.sender] += syntheticAmount;
+        
+        _mint(msg.sender, syntheticAmount);
+    }
+}
+```
+
+## NFTs and Digital Assets
+
+### Non-Fungible Token Standards
+
+#### ERC-721
+```solidity
+contract NFT is ERC721 {
+    uint256 private _tokenIdCounter;
+    mapping(uint256 => string) private _tokenURIs;
+    
+    function mint(address to, string memory tokenURI) external returns (uint256) {
+        uint256 tokenId = _tokenIdCounter++;
+        _mint(to, tokenId);
+        _setTokenURI(tokenId, tokenURI);
+        return tokenId;
+    }
+    
+    function tokenURI(uint256 tokenId) public view override returns (string memory) {
+        require(_exists(tokenId), "Token does not exist");
+        return _tokenURIs[tokenId];
+    }
+}
+```
+
+#### ERC-1155 (Multi-Token Standard)
+```solidity
+contract MultiToken is ERC1155 {
+    mapping(uint256 => uint256) public tokenSupply;
+    mapping(uint256 => string) private _tokenURIs;
+    
+    function mint(
+        address to,
+        uint256 id,
+        uint256 amount,
+        string memory tokenURI,
+        bytes memory data
+    ) external {
+        _mint(to, id, amount, data);
+        tokenSupply[id] += amount;
+        _setTokenURI(id, tokenURI);
+    }
+}
+```
+
+### Advanced NFT Concepts
+
+#### Programmable NFTs
+```solidity
+contract ProgrammableNFT is ERC721 {
+    struct NFTData {
+        uint256 level;
+        uint256 experience;
+        string[] traits;
+    }
+    
+    mapping(uint256 => NFTData) public nftData;
+    
+    function levelUp(uint256 tokenId) external {
+        require(ownerOf(tokenId) == msg.sender, "Not owner");
+        require(nftData[tokenId].experience >= 1000, "Not enough experience");
+        
+        nftData[tokenId].level++;
+        nftData[tokenId].experience = 0;
+        
+        // Update traits based on new level
+        updateTraits(tokenId);
+    }
+}
+```
+
+#### Fractionalized NFTs
+```solidity
+contract FractionalNFT {
+    address public nftContract;
+    uint256 public tokenId;
+    uint256 public totalShares;
+    mapping(address => uint256) public shares;
+    
+    function buyShares(uint256 shareAmount) external payable {
+        uint256 cost = shareAmount * sharePrice;
+        require(msg.value >= cost, "Insufficient payment");
+        
+        shares[msg.sender] += shareAmount;
+    }
+    
+    function redeemNFT() external {
+        require(shares[msg.sender] == totalShares, "Must own all shares");
+        IERC721(nftContract).transferFrom(address(this), msg.sender, tokenId);
+    }
+}
+```
+
+### NFT Marketplaces and Royalties
+
+#### On-Chain Royalties (EIP-2981)
+```solidity
+contract RoyaltyNFT is ERC721, ERC2981 {
+    constructor() ERC721("RoyaltyNFT", "RNFT") {
+        _setDefaultRoyalty(msg.sender, 250); // 2.5% royalty
+    }
+    
+    function mint(address to, uint256 tokenId) external {
+        _mint(to, tokenId);
+        _setTokenRoyalty(tokenId, msg.sender, 500); // 5% for this specific token
+    }
+}
+```
+
+## Blockchain Oracles
+
+### Oracle Problem
+Blockchains cannot natively access external data due to:
+- **Deterministic execution**: All nodes must reach same result
+- **Isolation**: Blockchain networks are closed systems
+- **Consensus requirements**: External data must be verified
+
+### Oracle Types
+
+#### Price Feed Oracles
+```solidity
+contract PriceOracle {
+    struct PriceData {
+        uint256 price;
+        uint256 timestamp;
+        uint256 roundId;
+    }
+    
+    mapping(string => PriceData) public priceFeeds;
+    mapping(address => bool) public authorizedNodes;
+    
+    function updatePrice(
+        string calldata symbol,
+        uint256 price,
+        uint256 roundId
+    ) external {
+        require(authorizedNodes[msg.sender], "Unauthorized");
+        require(roundId > priceFeeds[symbol].roundId, "Stale data");
+        
+        priceFeeds[symbol] = PriceData({
+            price: price,
+            timestamp: block.timestamp,
+            roundId: roundId
+        });
+    }
+}
+```
+
+#### Decentralized Oracle Networks
+- **Chainlink**: Decentralized oracle network with reputation system
+- **Band Protocol**: Cross-chain data oracle platform
+- **API3**: First-party oracles with dAPI (decentralized APIs)
+
+### Oracle Security Considerations
+
+#### Flash Loan Attacks on Oracles
+```solidity
+// Vulnerable price calculation
+function getPrice() public view returns (uint256) {
+    uint256 reserve0 = IERC20(token0).balanceOf(pair);
+    uint256 reserve1 = IERC20(token1).balanceOf(pair);
+    return reserve1 * 1e18 / reserve0; // Manipulable via flash loans
+}
+
+// Secure time-weighted average price
+contract TWAPOracle {
+    uint256 public constant PERIOD = 3600; // 1 hour
+    
+    function getPrice() external view returns (uint256) {
+        (uint256 price0Cumulative, uint256 price1Cumulative, uint32 blockTimestamp) = 
+            IUniswapV2Pair(pair).getReserves();
+            
+        uint32 timeElapsed = blockTimestamp - blockTimestampLast;
+        require(timeElapsed >= PERIOD, "Insufficient time elapsed");
+        
+        return (price0Cumulative - price0CumulativeLast) / timeElapsed;
+    }
+}
+```
+
+## Privacy-Preserving Technologies
+
+### Ring Signatures
+Allow anonymous signatures within a group without revealing the actual signer.
+
+```solidity
+contract RingSignature {
+    struct Ring {
+        address[] publicKeys;
+        bytes signature;
+        bytes32 message;
+    }
+    
+    function verifyRingSignature(Ring memory ring) public pure returns (bool) {
+        // Verify that one of the ring members signed without revealing which one
+        return verifyRingSignatureInternal(ring.publicKeys, ring.signature, ring.message);
+    }
+}
+```
+
+### Stealth Addresses
+Generate unique addresses for each transaction to enhance privacy.
+
+```solidity
+contract StealthAddress {
+    event StealthPayment(
+        address indexed stealthAddress,
+        bytes32 ephemeralPublicKey,
+        uint256 amount
+    );
+    
+    function sendToStealth(
+        bytes32 recipientPublicKey,
+        uint256 amount
+    ) external payable {
+        // Generate ephemeral key pair
+        (bytes32 ephemeralPrivate, bytes32 ephemeralPublic) = generateEphemeralKeys();
+        
+        // Compute stealth address
+        address stealthAddr = computeStealthAddress(recipientPublicKey, ephemeralPrivate);
+        
+        // Send payment
+        payable(stealthAddr).transfer(amount);
+        
+        emit StealthPayment(stealthAddr, ephemeralPublic, amount);
+    }
+}
+```
+
+### Mixers and Tumblers
+Services that mix coins from multiple users to obscure transaction history.
+
+```solidity
+contract Mixer {
+    mapping(bytes32 => bool) public nullifierHashes;
+    mapping(bytes32 => bool) public commitments;
+    
+    function deposit(bytes32 commitment) external payable {
+        require(msg.value == mixingAmount, "Incorrect amount");
+        commitments[commitment] = true;
+    }
+    
+    function withdraw(
+        bytes32 nullifierHash,
+        address recipient,
+        uint256[8] calldata proof
+    ) external {
+        require(!nullifierHashes[nullifierHash], "Already spent");
+        require(verifyZKProof(proof, nullifierHash, recipient), "Invalid proof");
+        
+        nullifierHashes[nullifierHash] = true;
+        payable(recipient).transfer(mixingAmount);
+    }
+}
+```
+
+### Confidential Transactions
+Hide transaction amounts while maintaining verifiability.
+
+```solidity
+contract ConfidentialTransactions {
+    struct PedersenCommitment {
+        uint256 x;
+        uint256 y;
+    }
+    
+    mapping(address => PedersenCommitment) public balances;
+    
+    function confidentialTransfer(
+        address to,
+        PedersenCommitment memory amountCommitment,
+        bytes calldata rangeProof
+    ) external {
+        require(verifyRangeProof(amountCommitment, rangeProof), "Invalid range proof");
+        
+        // Update balance commitments without revealing amounts
+        balances[msg.sender] = subtractCommitments(balances[msg.sender], amountCommitment);
+        balances[to] = addCommitments(balances[to], amountCommitment);
+    }
+}
+```
+
+## Quantum-Resistant Blockchain
+
+### Quantum Computing Threat
+- **Shor's Algorithm**: Can break RSA and ECC in polynomial time
+- **Grover's Algorithm**: Reduces hash security by half
+- **Timeline**: Practical quantum computers expected within 10-30 years
+
+### Post-Quantum Cryptography
+
+#### Lattice-Based Cryptography
+```solidity
+contract QuantumResistantSignature {
+    struct DilithiumSignature {
+        bytes signature;
+        bytes publicKey;
+        bytes message;
+    }
+    
+    function verifyQuantumSafeSignature(
+        DilithiumSignature memory sig
+    ) public pure returns (bool) {
+        // Verify Dilithium signature (NIST post-quantum standard)
+        return verifyDilithium(sig.signature, sig.publicKey, sig.message);
+    }
+}
+```
+
+#### Hash-Based Signatures
+- **Merkle Signature Scheme**: One-time signatures with Merkle trees
+- **XMSS**: Extended Merkle Signature Scheme
+- **SPHINCS+**: Stateless hash-based signatures
+
+### Quantum-Safe Blockchain Design
+
+#### Transition Strategies
+1. **Hybrid Approach**: Support both classical and post-quantum algorithms
+2. **Gradual Migration**: Phase out vulnerable algorithms over time
+3. **Emergency Upgrades**: Rapid deployment if quantum threat emerges
+
+```solidity
+contract HybridSignatureVerification {
+    enum SignatureType { ECDSA, Dilithium, Hybrid }
+    
+    function verifySignature(
+        bytes memory signature,
+        bytes memory message,
+        address signer,
+        SignatureType sigType
+    ) public pure returns (bool) {
+        if (sigType == SignatureType.ECDSA) {
+            return verifyECDSA(signature, message, signer);
+        } else if (sigType == SignatureType.Dilithium) {
+            return verifyDilithium(signature, message, signer);
+        } else {
+            return verifyECDSA(signature, message, signer) && 
+                   verifyDilithium(signature, message, signer);
+        }
+    }
+}
+```
 
 ## Conclusion
 
